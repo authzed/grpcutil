@@ -10,6 +10,14 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+const (
+	// SkipVerifyCA is a constant that imrpoves the readability of `WithSystemCerts`
+	SkipVerifyCA = true
+
+	// VerifyCA is a constant that improves the readability of `WithSystemCerts`.
+	VerifyCA = false
+)
+
 // WithSystemCerts is a dial option for requiring TLS with the system
 // certificate pool.
 //
