@@ -34,6 +34,23 @@ func WithSystemCerts(insecureSkipVerify bool) grpc.DialOption {
 	}))
 }
 
+// WithSystemCerts is a dial option for requiring TLS from a specified path.
+// If the path is a directory, all certs are loaded. If it is an individual
+// file only the directly specified cert is loaded.
+//
+// This function panics if custom certificate pool cannot be instantiated.
+func WithCustomCerts(certPath string, insecureSkipVerify bool) grpc.DialOption {
+	certPool, err := customCertPool(certPath)
+	if err != nil {
+		panic(err)
+	}
+
+	return grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		RootCAs:            certPool,
+		InsecureSkipVerify: insecureSkipVerify,
+	}))
+}
+
 type secureMetadataCreds map[string]string
 
 func (c secureMetadataCreds) RequireTransportSecurity() bool { return true }
