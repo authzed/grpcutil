@@ -3,13 +3,18 @@ package grpcutil
 import (
 	"context"
 
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc/health"
 )
 
-// IgnoreAuthMix implements the ServiceAuthFuncOverride interface to ignore any
-// auth requirements set by github.com/grpc-ecosystem/go-grpc-middleware/auth.
+// IgnoreAuthMixin is a struct that can be embedded to make a gRPC handler
+// ignore any auth requirements set by the gRPC community auth middleware.
 type IgnoreAuthMixin struct{}
 
+var _ grpc_auth.ServiceAuthFuncOverride = (*IgnoreAuthMixin)(nil)
+
+// AuthFuncOverride implements the grpc_auth.ServiceAuthFuncOverride by
+// performing a no-op.
 func (m IgnoreAuthMixin) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	return ctx, nil
 }
@@ -21,7 +26,7 @@ type AuthlessHealthServer struct {
 	IgnoreAuthMixin
 }
 
-// NewAuthlessServer returns a new gRPC health server that ignores auth
+// NewAuthlessHealthServer returns a new gRPC health server that ignores auth
 // middleware.
 func NewAuthlessHealthServer() *AuthlessHealthServer {
 	return &AuthlessHealthServer{Server: health.NewServer()}
