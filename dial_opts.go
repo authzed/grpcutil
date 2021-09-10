@@ -34,7 +34,7 @@ func WithSystemCerts(insecureSkipVerify bool) grpc.DialOption {
 	}))
 }
 
-// WithSystemCerts is a dial option for requiring TLS from a specified path.
+// WithCustomCerts is a dial option for requiring TLS from a specified path.
 // If the path is a directory, all certs are loaded. If it is an individual
 // file only the directly specified cert is loaded.
 //
