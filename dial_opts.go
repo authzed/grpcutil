@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
+	"github.com/certifi/gocertifi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -25,7 +26,12 @@ const (
 func WithSystemCerts(insecureSkipVerify bool) grpc.DialOption {
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		panic(err)
+		// Fall back to Mozilla collection of root CAs.
+		certPool, err = gocertifi.CACerts()
+		if err != nil {
+			// This library promises that this should never occur.
+			panic("gocertifi returned an error: " + err.Error())
+		}
 	}
 
 	return grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
