@@ -17,7 +17,9 @@ func TestWrapMethodsNoop(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, NoopUnaryInterceptor), &testServer{})
-	go s.Serve(lis)
+	go func() {
+		_ = s.Serve(lis)
+	}()
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -42,7 +44,9 @@ func TestWrapMethods(t *testing.T) {
 		return handler(ctx, req)
 	}
 	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, middleware), &testServer{})
-	go s.Serve(lis)
+	go func() {
+		_ = s.Serve(lis)
+	}()
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -79,7 +83,9 @@ func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 		return sr, err
 	}
 	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, middleware), &testServer{})
-	go s.Serve(lis)
+	go func() {
+		_ = s.Serve(lis)
+	}()
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -105,7 +111,9 @@ func TestWrapStreams(t *testing.T) {
 
 	counter := 0
 	s.RegisterService(WrapStreams(testpb.TestService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
-	go s.Serve(lis)
+	go func() {
+		_ = s.Serve(lis)
+	}()
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -152,7 +160,9 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 
 	counter := 0
 	s.RegisterService(WrapStreams(testpb.TestService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
-	go s.Serve(lis)
+	go func() {
+		_ = s.Serve(lis)
+	}()
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
@@ -224,7 +234,9 @@ func (s *testServer) EmptyCall(ctx context.Context, in *testpb.Empty) (*testpb.E
 		for _, entry := range md["user-agent"] {
 			str = append(str, "ua", entry)
 		}
-		grpc.SendHeader(ctx, metadata.Pairs(str...))
+		if err := grpc.SendHeader(ctx, metadata.Pairs(str...)); err != nil {
+			return nil, err
+		}
 	}
 	return new(testpb.Empty), nil
 }

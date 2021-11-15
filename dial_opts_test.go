@@ -3,11 +3,12 @@ package grpcutil_test
 import (
 	"log"
 
-	"github.com/authzed/grpcutil"
 	"google.golang.org/grpc"
+
+	"github.com/authzed/grpcutil"
 )
 
-func ExampleWithSystemCertificates() {
+func ExampleWithSystemCerts() {
 	_, err := grpc.Dial(
 		"grpc.authzed.com:443",
 		grpcutil.WithSystemCerts(grpcutil.VerifyCA),
