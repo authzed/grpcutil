@@ -3,6 +3,7 @@ package grpcutil
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	grpcmw "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
@@ -98,4 +99,20 @@ func WrapStreams(svcDesc grpc.ServiceDesc, interceptors ...grpc.StreamServerInte
 // NoopUnaryInterceptor is a gRPC middleware that does not do anything.
 func NoopUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	return handler(ctx, req)
+}
+
+// SplitMethodName is used to split service name and method name from the
+// method string passed into Interceptors.
+//
+// This function is vendored from:
+// https://github.com/grpc-ecosystem/go-grpc-prometheus/blob/82c243799c991a7d5859215fba44a81834a52a71/util.go#L31-L37
+//
+// Copyright 2016 Michal Witkowski. All Rights Reserved.
+// Apache 2.0 Licensed
+func SplitMethodName(fullMethodName string) (string, string) {
+	fullMethodName = strings.TrimPrefix(fullMethodName, "/") // remove leading slash
+	if i := strings.Index(fullMethodName, "/"); i >= 0 {
+		return fullMethodName[:i], fullMethodName[i+1:]
+	}
+	return "unknown", "unknown"
 }
