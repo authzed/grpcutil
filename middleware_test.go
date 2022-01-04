@@ -13,6 +13,13 @@ import (
 	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
+func TestSplitMethodName(t *testing.T) {
+	serviceName, methodName := SplitMethodName("/authzed.api.v0.ACLService/Check")
+	if serviceName != "authzed.api.v0.ACLService" || methodName != "Check" {
+		t.Errorf("expected 'authzed.api.v0.ACLService' 'Check' , got %s %s", serviceName, methodName)
+	}
+}
+
 func TestWrapMethodsNoop(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
