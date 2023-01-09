@@ -9,19 +9,26 @@ import (
 )
 
 func ExampleWithSystemCerts() {
-	_, err := grpc.Dial(
-		"grpc.authzed.com:443",
-		grpcutil.WithSystemCerts(grpcutil.VerifyCA),
-	)
+	withSysCerts, err := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = grpc.Dial("grpc.authzed.com:443", withSysCerts)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func ExampleWithBearerToken() {
-	_, err := grpc.Dial(
+	withSystemCerts, err := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = grpc.Dial(
 		"grpc.authzed.com:443",
-		grpcutil.WithSystemCerts(grpcutil.VerifyCA),
+		withSystemCerts,
 		grpcutil.WithBearerToken("t_your_token_here_1234567deadbeef"),
 	)
 	if err != nil {

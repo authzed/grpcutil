@@ -2,6 +2,7 @@ package grpcutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -144,7 +145,7 @@ func TestWrapStreams(t *testing.T) {
 	if err := func() error {
 		for {
 			_, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 			if err != nil {
@@ -193,7 +194,7 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 	if err := func() error {
 		for {
 			_, err := stream.Recv()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
 			}
 			if err != nil {
