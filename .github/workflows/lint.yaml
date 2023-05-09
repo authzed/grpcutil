@@ -54,6 +54,7 @@ jobs:
           skip-build-cache: false
       - name: "Go Generate"
         run: "go generate ./... && bash -c '[ $(git status --porcelain | tee /dev/fd/2 | wc -c) -eq 0 ]'"
+      - uses: "authzed/actions/govulncheck@main"
 
   yaml-lint:
     name: "YAML Lint"
