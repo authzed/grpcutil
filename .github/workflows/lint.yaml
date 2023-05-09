@@ -45,7 +45,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: "actions/checkout@v2"
-      - uses: "bewuethr/yamllint-action@v1.1.1"
+      - uses: "bewuethr/yamllint-action@v1.2.2"
         with:
           config-file: ".yamllint"
 
