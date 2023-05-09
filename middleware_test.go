@@ -10,9 +10,9 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	testpb "google.golang.org/grpc/interop/grpc_testing"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
 func TestSplitMethodName(t *testing.T) {
@@ -285,8 +285,6 @@ func newPayload(t testpb.PayloadType, size int32) (*testpb.Payload, error) {
 	body := make([]byte, size)
 	switch t {
 	case testpb.PayloadType_COMPRESSABLE:
-	case testpb.PayloadType_UNCOMPRESSABLE:
-		return nil, fmt.Errorf("PayloadType UNCOMPRESSABLE is not supported")
 	default:
 		return nil, fmt.Errorf("unsupported payload type: %d", t)
 	}
