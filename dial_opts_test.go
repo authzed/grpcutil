@@ -2,9 +2,9 @@ package grpcutil_test
 
 import (
 	"log"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/authzed/grpcutil"
 )
