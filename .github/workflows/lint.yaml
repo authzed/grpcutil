@@ -1,0 +1,91 @@
+---
+name: "Lint"
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "*"
+jobs:
+  go-mod:
+    name: "Go Modules"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: "actions/setup-go@v4"
+        with:
+          go-version: "^1.20"
+      - uses: "authzed/actions/go-mod-tidy@main"
+
+  go-fmt:
+    name: "Go Format"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: "actions/setup-go@v4"
+        with:
+          go-version: "^1.20"
+      - uses: "authzed/actions/gofumpt@main"
+
+  go-lint:
+    name: "Go Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: "actions/setup-go@v4"
+        with:
+          go-version: "^1.20"
+      - uses: "authzed/actions/golangci-lint@main"
+      - uses: "authzed/actions/go-generate@main"
+      - uses: "authzed/actions/govulncheck@main"
+
+  yaml-lint:
+    name: "YAML Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v2"
+      - uses: "bewuethr/yamllint-action@v1.1.1"
+        with:
+          config-file: ".yamllint"
+
+  markdown-lint:
+    name: "Markdown Lint"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "nosborn/github-action-markdown-cli@v2.0.0"
+        with:
+          files: "."
+          config_file: ".markdownlint.yaml"
+
+  codeql:
+    name: "Analyze with CodeQL"
+    runs-on: "ubuntu-latest-8-cores"
+    permissions:
+      actions: "read"
+      contents: "read"
+      security-events: "write"
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["go"]
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: "authzed/actions/codeql@main"
+
+  trivy:
+    name: "Analyze with Trivy"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: "aquasecurity/trivy-action@0.9.0"
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL"
+      - name: "Upload Trivy scan results to GitHub Security tab"
+        uses: "github/codeql-action/upload-sarif@v2"
+        with:
+          sarif_file: "trivy-results.sarif"
