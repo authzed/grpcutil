@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
 	testpb "google.golang.org/grpc/test/grpc_testing"
@@ -31,7 +32,7 @@ func TestWrapMethodsNoop(t *testing.T) {
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +59,7 @@ func TestWrapMethods(t *testing.T) {
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,7 +98,7 @@ func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -125,7 +126,7 @@ func TestWrapStreams(t *testing.T) {
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -174,7 +175,7 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
-	}), grpc.WithInsecure())
+	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -236,7 +237,7 @@ type testServer struct {
 	testpb.UnimplementedTestServiceServer
 }
 
-func (s *testServer) EmptyCall(ctx context.Context, in *testpb.Empty) (*testpb.Empty, error) {
+func (s *testServer) EmptyCall(ctx context.Context, _ *testpb.Empty) (*testpb.Empty, error) {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		var str []string
 		for _, entry := range md["user-agent"] {
@@ -249,7 +250,7 @@ func (s *testServer) EmptyCall(ctx context.Context, in *testpb.Empty) (*testpb.E
 	return new(testpb.Empty), nil
 }
 
-func (s *testServer) UnaryCall(ctx context.Context, in *testpb.SimpleRequest) (*testpb.SimpleResponse, error) {
+func (s *testServer) UnaryCall(_ context.Context, in *testpb.SimpleRequest) (*testpb.SimpleResponse, error) {
 	payload, err := newPayload(in.GetResponseType(), in.GetResponseSize())
 	if err != nil {
 		return nil, err
