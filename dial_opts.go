@@ -136,7 +136,7 @@ func WithBearerToken(token string) grpc.DialOption {
 type insecureMetadataCreds map[string]string
 
 func (c insecureMetadataCreds) RequireTransportSecurity() bool { return false }
-func (c insecureMetadataCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (c insecureMetadataCreds) GetRequestMetadata(_ context.Context, _ ...string) (map[string]string, error) {
 	return c, nil
 }
 

@@ -2,6 +2,7 @@ package grpcutil_test
 
 import (
 	"log"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc"
 
@@ -39,7 +40,7 @@ func ExampleWithBearerToken() {
 func ExampleWithInsecureBearerToken() {
 	_, err := grpc.Dial(
 		"grpc.authzed.com:443",
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpcutil.WithInsecureBearerToken("t_your_token_here_1234567deadbeef"),
 	)
 	if err != nil {

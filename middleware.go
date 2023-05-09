@@ -21,7 +21,7 @@ var _ grpc_auth.ServiceAuthFuncOverride = (*IgnoreAuthMixin)(nil)
 
 // AuthFuncOverride implements the grpc_auth.ServiceAuthFuncOverride by
 // performing a no-op.
-func (m IgnoreAuthMixin) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+func (m IgnoreAuthMixin) AuthFuncOverride(ctx context.Context, _ string) (context.Context, error) {
 	return ctx, nil
 }
 
@@ -97,7 +97,7 @@ func WrapStreams(svcDesc grpc.ServiceDesc, interceptors ...grpc.StreamServerInte
 }
 
 // NoopUnaryInterceptor is a gRPC middleware that does not do anything.
-func NoopUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+func NoopUnaryInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	return handler(ctx, req)
 }
 
