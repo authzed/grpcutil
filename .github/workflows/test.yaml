@@ -2,15 +2,15 @@ name: "test"
 on:
   push:
     branches:
-    - "!dependabot/*"
-    - "*"
+      - "!dependabot/*"
+      - "*"
   pull_request:
     branches:
-    - "*"
+      - "*"
 env:
   GO_VERSION: "~1.20.4"
 jobs:
-  lint: 
+  lint:
     name: "Lint"
     runs-on: "ubuntu-latest"
     steps:
