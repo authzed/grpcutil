@@ -3,16 +3,16 @@ package grpcutil
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"testing"
 
+	"github.com/authzed/grpcutil/internal/testpb"
+
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
 func TestSplitMethodName(t *testing.T) {
@@ -25,7 +25,7 @@ func TestSplitMethodName(t *testing.T) {
 func TestWrapMethodsNoop(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
-	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, NoopUnaryInterceptor), &testServer{})
+	s.RegisterService(WrapMethods(testpb.HelloService_ServiceDesc, NoopUnaryInterceptor), &testServer{})
 	go func() {
 		_ = s.Serve(lis)
 	}()
@@ -33,26 +33,24 @@ func TestWrapMethodsNoop(t *testing.T) {
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Error(err)
-	}
-	client := testpb.NewTestServiceClient(conn)
-	_, err = client.UnaryCall(context.Background(), &testpb.SimpleRequest{ResponseType: testpb.PayloadType_COMPRESSABLE, ResponseSize: 1})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
+
+	client := testpb.NewHelloServiceClient(conn)
+	resp, err := client.HelloUnary(context.Background(), &testpb.HelloRequest{Message: "hi"})
+	require.NoError(t, err)
+	require.Equal(t, "hi", resp.Message)
 }
 
 func TestWrapMethods(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	middleware := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		sr := req.(*testpb.SimpleRequest)
-		sr.ResponseSize++
+	middleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		sr := req.(*testpb.HelloRequest)
+		sr.Message = "yep"
 		return handler(ctx, req)
 	}
-	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, middleware), &testServer{})
+	s.RegisterService(WrapMethods(testpb.HelloService_ServiceDesc, middleware), &testServer{})
 	go func() {
 		_ = s.Serve(lis)
 	}()
@@ -60,38 +58,32 @@ func TestWrapMethods(t *testing.T) {
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Error(err)
-	}
-	client := testpb.NewTestServiceClient(conn)
-	resp, err := client.UnaryCall(context.Background(), &testpb.SimpleRequest{ResponseType: testpb.PayloadType_COMPRESSABLE, ResponseSize: 1})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 
-	if len(resp.Payload.Body) != 2 {
-		t.Error("request not intercepted")
-	}
+	client := testpb.NewHelloServiceClient(conn)
+	resp, err := client.HelloUnary(context.Background(), &testpb.HelloRequest{Message: "hi"})
+	require.NoError(t, err)
+	require.Equal(t, "yep", resp.Message, "request not intercepted")
 }
 
 func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 
-	serverMiddleware := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	serverMiddleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		r, err := handler(ctx, req)
-		sr := r.(*testpb.SimpleResponse)
-		sr.Payload.Body = append(sr.Payload.Body, byte(2))
+		sr := r.(*testpb.HelloResponse)
+		sr.Message += ",friend"
 		return sr, err
 	}
 	s := grpc.NewServer(grpc.ChainUnaryInterceptor(serverMiddleware))
 
-	middleware := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	middleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		r, err := handler(ctx, req)
-		sr := r.(*testpb.SimpleResponse)
-		sr.Payload.Body = append(sr.Payload.Body, byte(1))
+		sr := r.(*testpb.HelloResponse)
+		sr.Message += ",sup"
 		return sr, err
 	}
-	s.RegisterService(WrapMethods(testpb.TestService_ServiceDesc, middleware), &testServer{})
+	s.RegisterService(WrapMethods(testpb.HelloService_ServiceDesc, middleware), &testServer{})
 	go func() {
 		_ = s.Serve(lis)
 	}()
@@ -99,19 +91,14 @@ func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Error(err)
-	}
-	client := testpb.NewTestServiceClient(conn)
-	resp, err := client.UnaryCall(context.Background(), &testpb.SimpleRequest{ResponseType: testpb.PayloadType_COMPRESSABLE, ResponseSize: 0})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
+
+	client := testpb.NewHelloServiceClient(conn)
+	resp, err := client.HelloUnary(context.Background(), &testpb.HelloRequest{Message: "hi"})
+	require.NoError(t, err)
 
 	// middleware happens before server middleware
-	if string(resp.Payload.Body) != "\u0000\u0001\u0002" {
-		t.Errorf("request not intercepted, got %b", resp.Payload.Body)
-	}
+	require.Equal(t, "yep,sup,friend", resp.Message, "request not intercepted, got %s", resp.Message)
 }
 
 func TestWrapStreams(t *testing.T) {
@@ -119,7 +106,7 @@ func TestWrapStreams(t *testing.T) {
 	s := grpc.NewServer()
 
 	counter := 0
-	s.RegisterService(WrapStreams(testpb.TestService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
+	s.RegisterService(WrapStreams(testpb.HelloService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
 	go func() {
 		_ = s.Serve(lis)
 	}()
@@ -127,23 +114,13 @@ func TestWrapStreams(t *testing.T) {
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Error(err)
-	}
-	client := testpb.NewTestServiceClient(conn)
-	stream, err := client.StreamingOutputCall(context.Background(), &testpb.StreamingOutputCallRequest{
-		ResponseType: testpb.PayloadType_COMPRESSABLE,
-		ResponseParameters: []*testpb.ResponseParameters{
-			{
-				Size: 0,
-			},
-		},
-	})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 
-	if err := func() error {
+	client := testpb.NewHelloServiceClient(conn)
+	stream, err := client.HelloStreaming(context.Background(), &testpb.HelloRequest{Message: "hi"})
+	require.NoError(t, err)
+
+	err = func() error {
 		for {
 			_, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
@@ -153,13 +130,9 @@ func TestWrapStreams(t *testing.T) {
 				return err
 			}
 		}
-	}(); err != nil {
-		t.Error(err)
-	}
-
-	if counter != 1 {
-		t.Error("stream not intercepted")
-	}
+	}()
+	require.NoError(t, err)
+	require.Equal(t, 1, counter, "stream not intercepted")
 }
 
 func TestWrapStreamsAndServerInterceptor(t *testing.T) {
@@ -168,7 +141,7 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 	s := grpc.NewServer(grpc.ChainStreamInterceptor(StreamMiddleware(&serverCounter)))
 
 	counter := 0
-	s.RegisterService(WrapStreams(testpb.TestService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
+	s.RegisterService(WrapStreams(testpb.HelloService_ServiceDesc, StreamMiddleware(&counter)), &testServer{})
 	go func() {
 		_ = s.Serve(lis)
 	}()
@@ -176,23 +149,13 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Error(err)
-	}
-	client := testpb.NewTestServiceClient(conn)
-	stream, err := client.StreamingOutputCall(context.Background(), &testpb.StreamingOutputCallRequest{
-		ResponseType: testpb.PayloadType_COMPRESSABLE,
-		ResponseParameters: []*testpb.ResponseParameters{
-			{
-				Size: 0,
-			},
-		},
-	})
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 
-	if err := func() error {
+	client := testpb.NewHelloServiceClient(conn)
+	stream, err := client.HelloStreaming(context.Background(), &testpb.HelloRequest{Message: "hi"})
+	require.NoError(t, err)
+
+	err = func() error {
 		for {
 			_, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
@@ -202,17 +165,15 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 				return err
 			}
 		}
-	}(); err != nil {
-		t.Error(err)
-	}
+	}()
+	require.NoError(t, err)
 
-	if counter != 1 || serverCounter != 1 {
-		t.Error("stream not intercepted")
-	}
+	require.Equal(t, 1, counter, "service stream not intercepted")
+	require.Equal(t, 1, serverCounter, "server stream not intercepted")
 }
 
 func StreamMiddleware(counter *int) grpc.StreamServerInterceptor {
-	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		wrapper := &recvWrapper{stream, counter}
 		return handler(srv, wrapper)
 	}
@@ -223,7 +184,7 @@ type recvWrapper struct {
 	counter *int
 }
 
-func (s *recvWrapper) RecvMsg(m interface{}) error {
+func (s *recvWrapper) RecvMsg(m any) error {
 	if err := s.ServerStream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -234,64 +195,13 @@ func (s *recvWrapper) RecvMsg(m interface{}) error {
 }
 
 type testServer struct {
-	testpb.UnimplementedTestServiceServer
+	testpb.UnimplementedHelloServiceServer
 }
 
-func (s *testServer) EmptyCall(ctx context.Context, _ *testpb.Empty) (*testpb.Empty, error) {
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		var str []string
-		for _, entry := range md["user-agent"] {
-			str = append(str, "ua", entry)
-		}
-		if err := grpc.SendHeader(ctx, metadata.Pairs(str...)); err != nil {
-			return nil, err
-		}
-	}
-	return new(testpb.Empty), nil
+func (s *testServer) HelloUnary(_ context.Context, in *testpb.HelloRequest) (*testpb.HelloResponse, error) {
+	return &testpb.HelloResponse{Message: in.Message}, nil
 }
 
-func (s *testServer) UnaryCall(_ context.Context, in *testpb.SimpleRequest) (*testpb.SimpleResponse, error) {
-	payload, err := newPayload(in.GetResponseType(), in.GetResponseSize())
-	if err != nil {
-		return nil, err
-	}
-
-	return &testpb.SimpleResponse{
-		Payload: payload,
-	}, nil
-}
-
-func (s *testServer) StreamingOutputCall(args *testpb.StreamingOutputCallRequest, stream testpb.TestService_StreamingOutputCallServer) error {
-	cs := args.GetResponseParameters()
-	for _, c := range cs {
-		payload, err := newPayload(args.GetResponseType(), c.GetSize())
-		if err != nil {
-			return err
-		}
-
-		if err := stream.Send(&testpb.StreamingOutputCallResponse{
-			Payload: payload,
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func newPayload(t testpb.PayloadType, size int32) (*testpb.Payload, error) {
-	if size < 0 {
-		return nil, fmt.Errorf("requested a response with invalid length %d", size)
-	}
-	body := make([]byte, size)
-	switch t {
-	case testpb.PayloadType_COMPRESSABLE:
-	case testpb.PayloadType_UNCOMPRESSABLE:
-		return nil, fmt.Errorf("PayloadType UNCOMPRESSABLE is not supported")
-	default:
-		return nil, fmt.Errorf("unsupported payload type: %d", t)
-	}
-	return &testpb.Payload{
-		Type: t,
-		Body: body,
-	}, nil
+func (s *testServer) HelloStreaming(args *testpb.HelloRequest, stream testpb.HelloService_HelloStreamingServer) error {
+	return stream.Send(&testpb.HelloResponse{Message: args.Message})
 }
