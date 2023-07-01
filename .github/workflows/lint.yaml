@@ -78,7 +78,7 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - uses: "actions/checkout@v3"
-      - uses: "aquasecurity/trivy-action@0.10.0"
+      - uses: "aquasecurity/trivy-action@0.11.2"
         with:
           scan-type: "fs"
           ignore-unfixed: true
