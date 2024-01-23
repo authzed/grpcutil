@@ -4,6 +4,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	rpbv1 "google.golang.org/grpc/reflection/grpc_reflection_v1"
+	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
 // NewAuthlessReflectionInterceptor creates a proxy GRPCServer which automatically converts
@@ -26,11 +27,14 @@ func (ir interceptingRegistrar) GetServiceInfo() map[string]grpc.ServiceInfo {
 }
 
 func (ir interceptingRegistrar) RegisterService(desc *grpc.ServiceDesc, impl interface{}) {
-	// NOTE: This method is now being invoked for both v1 (handled below) and v1alpha, which is formally deprecated.
-	// Since the v1alpha handler is now internally typed, we only wrap the V1.
 	reflectionSrvv1, ok := impl.(rpbv1.ServerReflectionServer)
 	if ok {
 		ir.delegate.RegisterService(desc, &authlessReflectionV1{ServerReflectionServer: reflectionSrvv1})
+	}
+
+	reflectionSrvv1alpha, ok := impl.(grpc_reflection_v1alpha.ServerReflectionServer)
+	if ok {
+		ir.delegate.RegisterService(desc, &authlessReflectionV1Alpha{ServerReflectionServer: reflectionSrvv1alpha})
 	}
 }
 
@@ -38,4 +42,10 @@ type authlessReflectionV1 struct {
 	IgnoreAuthMixin
 
 	rpbv1.ServerReflectionServer
+}
+
+type authlessReflectionV1Alpha struct {
+	IgnoreAuthMixin
+
+	grpc_reflection_v1alpha.ServerReflectionServer
 }
