@@ -30,7 +30,7 @@ func TestWrapMethodsNoop(t *testing.T) {
 		_ = s.Serve(lis)
 	}()
 
-	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+	conn, err := grpc.NewClient("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestWrapMethods(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 
-	middleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	middleware := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		sr := req.(*testpb.HelloRequest)
 		sr.Message = "yep"
 		return handler(ctx, req)
@@ -55,7 +55,7 @@ func TestWrapMethods(t *testing.T) {
 		_ = s.Serve(lis)
 	}()
 
-	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+	conn, err := grpc.NewClient("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestWrapMethods(t *testing.T) {
 func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 	lis := bufconn.Listen(1024 * 1024)
 
-	serverMiddleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	serverMiddleware := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		r, err := handler(ctx, req)
 		sr := r.(*testpb.HelloResponse)
 		sr.Message += ",friend"
@@ -77,7 +77,7 @@ func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 	}
 	s := grpc.NewServer(grpc.ChainUnaryInterceptor(serverMiddleware))
 
-	middleware := func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	middleware := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		r, err := handler(ctx, req)
 		sr := r.(*testpb.HelloResponse)
 		sr.Message += ",sup"
@@ -88,7 +88,7 @@ func TestWrapMethodsAndServerInterceptor(t *testing.T) {
 		_ = s.Serve(lis)
 	}()
 
-	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+	conn, err := grpc.NewClient("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestWrapStreams(t *testing.T) {
 		_ = s.Serve(lis)
 	}()
 
-	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+	conn, err := grpc.NewClient("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -146,7 +146,7 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 		_ = s.Serve(lis)
 	}()
 
-	conn, err := grpc.Dial("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+	conn, err := grpc.NewClient("", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestWrapStreamsAndServerInterceptor(t *testing.T) {
 }
 
 func StreamMiddleware(counter *int) grpc.StreamServerInterceptor {
-	return func(srv any, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		wrapper := &recvWrapper{stream, counter}
 		return handler(srv, wrapper)
 	}
