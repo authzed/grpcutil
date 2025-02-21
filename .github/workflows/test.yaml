@@ -8,7 +8,7 @@ on:
     branches:
       - "*"
 env:
-  GO_VERSION: "~1.20.4"
+  GO_VERSION: "^1.23"
 jobs:
   lint:
     name: "Lint"
