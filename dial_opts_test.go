@@ -15,7 +15,7 @@ func ExampleWithSystemCerts() {
 		log.Fatal(err)
 	}
 
-	_, err = grpc.Dial("grpc.authzed.com:443", withSysCerts)
+	_, err = grpc.NewClient("grpc.authzed.com:443", withSysCerts)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func ExampleWithBearerToken() {
 		log.Fatal(err)
 	}
 
-	_, err = grpc.Dial(
+	_, err = grpc.NewClient(
 		"grpc.authzed.com:443",
 		withSystemCerts,
 		grpcutil.WithBearerToken("t_your_token_here_1234567deadbeef"),
@@ -38,7 +38,7 @@ func ExampleWithBearerToken() {
 }
 
 func ExampleWithInsecureBearerToken() {
-	_, err := grpc.Dial(
+	_, err := grpc.NewClient(
 		"grpc.authzed.com:443",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpcutil.WithInsecureBearerToken("t_your_token_here_1234567deadbeef"),

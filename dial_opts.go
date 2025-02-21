@@ -62,7 +62,10 @@ func WithSystemCerts(v verification) (grpc.DialOption, error) {
 
 func forEachFileContents(dirPath string, fn func(contents []byte)) error {
 	dirFS := os.DirFS(dirPath)
-	return fs.WalkDir(dirFS, ".", func(path string, d fs.DirEntry, err error) error {
+	return fs.WalkDir(dirFS, ".", func(_ string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if !d.IsDir() {
 			contents, err := fs.ReadFile(dirFS, d.Name())
 			if err != nil {
