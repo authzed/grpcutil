@@ -123,6 +123,22 @@ func WithCustomCertBytes(v verification, certsContents ...[]byte) (grpc.DialOpti
 	})), nil
 }
 
+// WithCustomCertBytes is a dial option for requiring TLS from a []byte.
+//
+// This function panics if custom certificate pool cannot be instantiated.
+func WithCustomCertBytes(cert []byte, insecureSkipVerify bool) grpc.DialOption {
+	certPool := x509.NewCertPool()
+	ok := certPool.AppendCertsFromPEM(cert)
+	if !ok {
+		panic("No x509 Certificates parsed")
+	}
+
+	return grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+		RootCAs:            certPool,
+		InsecureSkipVerify: insecureSkipVerify,
+	}))
+}
+
 type secureMetadataCreds map[string]string
 
 func (c secureMetadataCreds) RequireTransportSecurity() bool { return true }
