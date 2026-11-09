@@ -10,7 +10,7 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/certifi/gocertifi"
+	"github.com/breml/rootcerts/embedded"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -41,17 +41,12 @@ func (v verification) asInsecureSkipVerify() bool {
 // WithSystemCerts returns a grpc.DialOption that uses the system-provided
 // certificate authority chain to verify the connection.
 //
-// If one cannot be found, this falls back to using a vendored version of
-// Mozilla's collection of root certificate authorities.
+// If loading the system pool fails, it falls back to an embedded copy of
+// Mozilla's root certificates.
 func WithSystemCerts(v verification) (grpc.DialOption, error) {
 	certPool, err := x509.SystemCertPool()
 	if err != nil {
-		// Fall back to Mozilla collection of root CAs.
-		certPool, err = gocertifi.CACerts()
-		if err != nil {
-			// This library promises that this should never occur.
-			return nil, fmt.Errorf("gocertifi returned an error: %w", err)
-		}
+		return WithCustomCertBytes(v, []byte(embedded.MozillaCACertificatesPEM()))
 	}
 
 	return grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
