@@ -3,7 +3,6 @@ module github.com/authzed/grpcutil
 go 1.27.4
 
 require (
-	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.85.0
@@ -12,6 +11,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
+	github.com/breml/rootcerts v0.3.8
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
